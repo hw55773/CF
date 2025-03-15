@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kxdkcf.mapper.TopicMapper">
+    <resultMap id="topicMap" type="com.kxdkcf.vo.TopicVO">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="favoritesNumber" column="favorites_number"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="isHot" column="is_hot"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <association property="user" javaType="com.kxdkcf.enity.User" column="user_id"
+                     select="com.kxdkcf.mapper.UserMapper.getUserById"/>
+    </resultMap>
+    <resultMap id="topicDetailsMap" type="com.kxdkcf.vo.TopicDetailVO">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="favoritesNumber" column="favorites_number"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="isHot" column="is_hot"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <association property="user" javaType="com.kxdkcf.enity.User" column="user_id"
+                     select="com.kxdkcf.mapper.UserMapper.getUserById"/>
+        <collection property="replyList" ofType="com.kxdkcf.vo.ReplyVO" column="id"
+                    select="com.kxdkcf.mapper.ReplyMapper.getReplyByTopicId"/>
+    </resultMap>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+        insert into topics(title, content, create_time, update_time, user_id)
+            value (#{title},#{content},#{createTime},#{updateTime},#{userId})
+    </insert>
+
+    <select id="getTopicList" resultMap="topicMap">
+        select t.id, t.title, t.content, t.favorites_number,t.user_id,t.like_count,t.reply_count,t.is_hot
+        ,t.create_time, t.update_time
+        from topics t
+        <where>
+            <if test="recommend != null and !recommend.isEmpty()">
+                and t.id in
+                <foreach collection="recommend" item="id" separator="," open="(" close=")">
+                    #{id}
+                </foreach>
+            </if>
+            <if test="name != null and name.trim() != ''">
+                and (t.title=#{name} or t.content=#{name})
+            </if>
+            <if test="begin != null and end != null">
+                and t.create_time between #{begin} and #{end}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectTopicDetails" resultMap="topicDetailsMap">
+        select id,
+               title,
+               content,
+               favorites_number,
+               create_time,
+               update_time,
+               user_id,
+               like_count,
+               reply_count,
+               is_hot
+        from topics
+        where id = #{topicId}
+    </select>
+
+    <select id="selectCollectedByUserId" resultMap="topicMap">
+        select id,
+               title,
+               content,
+               favorites_number,
+               create_time,
+               update_time,
+               user_id,
+               like_count,
+               reply_count,
+               is_hot
+        from topics
+        where user_id = #{userId}
+        order by create_time desc
+    </select>
+
+    <update id="update">
+        UPDATE topics
+        <if test="list != null and !list.isEmpty()">
+            <trim prefix="SET" suffixOverrides=",">
+                <!-- 标题 -->
+                <trim prefix="title = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.title != null">
+                            WHEN id = #{topic.id} THEN #{topic.title}
+                        </if>
+                    </foreach>
+                </trim>
+
+                <!-- 内容 -->
+                <trim prefix="content = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.content != null">
+                            WHEN id = #{topic.id} THEN #{topic.content}
+                        </if>
+                    </foreach>
+                </trim>
+
+                <!-- 收藏数 -->
+                <trim prefix="favorites_number = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.favoritesNumber != null">
+                            WHEN id = #{topic.id} THEN #{topic.favoritesNumber}
+                        </if>
+                    </foreach>
+                </trim>
+
+                <!-- 更新时间（强制更新） -->
+                <trim prefix="update_time = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        WHEN id = #{topic.id} THEN #{topic.updateTime}
+                    </foreach>
+                </trim>
+
+                <!-- 用户ID -->
+                <trim prefix="user_id = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.userId != null">
+                            WHEN id = #{topic.id} THEN #{topic.userId}
+                        </if>
+                    </foreach>
+                </trim>
+
+                <!-- 点赞数 -->
+                <trim prefix="like_count = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.likeCount != null">
+                            WHEN id = #{topic.id} THEN #{topic.likeCount}
+                        </if>
+                    </foreach>
+                </trim>
+
+                <!-- 回复数 -->
+                <trim prefix="reply_count = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.replyCount != null">
+                            WHEN id = #{topic.id} THEN #{topic.replyCount}
+                        </if>
+                    </foreach>
+                </trim>
+
+                <!-- 是否热门 -->
+                <trim prefix="is_hot = CASE" suffix="END,">
+                    <foreach collection="list" item="topic">
+                        <if test="topic.isHot != null">
+                            WHEN id = #{topic.id} THEN #{topic.isHot}
+                        </if>
+                    </foreach>
+                </trim>
+            </trim>
+
+            WHERE id IN
+            <foreach collection="list" item="topic" open="(" separator="," close=")">
+                #{topic.id}
+            </foreach>
+        </if>
+    </update>
+</mapper>

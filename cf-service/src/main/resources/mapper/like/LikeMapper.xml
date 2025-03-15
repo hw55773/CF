@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kxdkcf.mapper.LikeMapper">
+    <resultMap id="topicMap" type="com.kxdkcf.vo.TopicVO">
+        <id property="id" column="id"/>
+        <result property="title" column="title"/>
+        <result property="content" column="content"/>
+        <result property="favoritesNumber" column="favorites_number"/>
+        <result property="likeCount" column="like_count"/>
+        <result property="replyCount" column="reply_count"/>
+        <result property="isHot" column="is_hot"/>
+        <result property="createTime" column="create_time"/>
+        <result property="updateTime" column="update_time"/>
+        <result property="isLiked" column="is_liked"/>
+        <result property="isCollected" column="is_collected"/>
+        <association property="user" javaType="com.kxdkcf.enity.User" column="user_id"
+                     select="com.kxdkcf.mapper.UserMapper.getUserById"/>
+    </resultMap>
+    <delete id="deleteByTopicIds">
+        delete from `like`
+        where topic_id
+        in
+        <foreach collection="topicIds" item="topicId" separator="," open="(" close=")">
+            #{topicId}
+        </foreach>
+    </delete>
+
+    <select id="selectCollectedByUserId" resultMap="topicMap">
+        select l.is_liked,
+               l.is_collected,
+               t.id,
+               t.title,
+               t.content,
+               t.favorites_number,
+               t.create_time,
+               t.update_time,
+               t.user_id,
+               t.like_count,
+               t.reply_count,
+               t.is_hot
+        from `like` l
+                 inner join topics t on l.topic_id = t.id
+        where l.is_collected = 1
+          and l.user_id = #{userId}
+        order by t.update_time desc
+    </select>
+</mapper>

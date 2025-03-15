@@ -1,0 +1,99 @@
+server:
+  port: 9090
+  address: 0.0.0.0
+spring:
+  mail:
+    host: smtp.qq.com
+    username: 2073578174@qq.com
+    password: usmvyclglqjmbddd
+    port: 465
+    properties:
+      mail:
+        smtp:
+          starttls:
+            enable:true
+          auth: true
+          ssl:
+            enable: true
+  data:
+    redis:
+      port: 6379
+      password: 123
+      host: 192.168.108.130 # localhost
+      database: 1
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: 200ms
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver # 数据库驱动类名称
+    url: jdbc:mysql://localhost:3306/cf # 数据库连接的URL
+    username: root # # 连接数据库的用户名
+    password: 123 # 连接数据库的密码
+  profiles:
+    active: dev
+  application:
+    name: cf-service
+
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true # Mybatis配置文件映射开关
+
+springdoc:
+  info:
+    title: 个人健康管理系统
+    description: 个人健康管理系统API
+    version: 1.0.0
+    contact:
+      name: kxdk
+      email: 13320731700@qq.com
+  swagger-ui:
+    path: /doc.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+    enabled: true
+  group-configs:
+    - group: '个人健康管理系统'
+      paths-to-match: '/**'
+      packages-to-scan: com.kxdkcf.controller # 这里换成您模块下controller包的路径
+
+kxdkcf:
+  ali-ocr:
+    id: ${ali-ocr.id}
+    key: ${ali-ocr.key}
+  path:
+    exclude-path-list: ${kxdkcf.path.exclude-path-list}
+    add-path-list: ${kxdkcf.path.add-path-list}
+  jwt:
+    user-token-key: ${jwt.user-token-key}
+    ttl: ${jwt.ttl}
+    token-name: ${jwt.token-name}
+  evaluator:
+    like-weight: ${kxdkcf.evaluator.like-weight}
+    collect-weight: ${kxdkcf.evaluator.collect-weight}
+    comment-weight: ${kxdkcf.evaluator.comment-weight}
+    hot-threshold: ${kxdkcf.evaluator.hot-threshold}
+  calculator:
+    fav-weight: 0.3
+    like-weight: 0.3
+    reply-weight: 0.2
+    hot-weight: 0.2
+  ai:
+    api-key: ${ai.key}
+    url: ${ai.url}
+  # 自定义上传目录
+  file:
+    upload-dir: ${kxdkcf.file.upload-dir}
+  task:
+    corn: ${kxdkcf.task.corn}
+    zone: ${kxdkcf.task.zone}
+    corn-relate: ${kxdkcf.task.corn-relate}

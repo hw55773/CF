@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kxdkcf.mapper.HealthMapper">
+    <insert id="insertHealthData" useGeneratedKeys="true" keyColumn="id" keyProperty="id">
+        insert into health_analyse(create_time, update_time, user_id, content)
+            VALUE (#{createTime}, #{updateTime}, #{userId}, #{content})
+    </insert>
+    <insert id="insertHealthRecommend">
+        insert into health_recommendation(user_id, create_time, update_time, content)
+            VALUE (#{userId}, #{createTime}, #{updateTime}, #{content})
+    </insert>
+</mapper>

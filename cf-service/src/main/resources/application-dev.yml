@@ -1,0 +1,31 @@
+kxdkcf:
+  path:
+    exclude-path-list:
+      - /user/login/**
+      - /user/register/**
+      - /user/captcha/**
+      - /file/download/**
+    add-path-list:
+      - /user/**
+      - /ai/**
+      - /topic/**
+      - /file/**
+      - /health/**
+  file:
+    upload-dir: D:\大学\大三\大三下\毕设\code\images # /home/kxdk/images
+  task:
+    corn: 0 0 15 * * ?
+    zone: Asia/Shanghai
+    corn-relate: 0 0 16 * * ?
+  evaluator:
+    like-weight: 0.4
+    collect-weight: 0.3
+    comment-weight: 0.3
+    hot-threshold: 1.0
+jwt:
+  user-token-key: kxdk
+  ttl: 12
+  token-name: token
+
+
+

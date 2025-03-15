@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.kxdkcf.mapper.AiMapper">
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" keyColumn="id" parameterType="com.kxdkcf.enity.Dialog">
+        insert into dialog(user_id, title, create_time, update_time)
+            VALUE (#{userId}, #{title}, #{createTime}, #{updateTime})
+    </insert>
+    <insert id="insertMessage">
+        insert into message(dialog_id, type, content, create_time)
+            VALUE (#{dialogId}, #{type}, #{content}, #{createTime})
+    </insert>
+    <update id="updateDialog">
+        update dialog
+        <set>
+            <if test="userId != null">
+                user_id = #{userId},
+            </if>
+            <if test="title != null and title.trim() != ''">
+                title = #{title},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime},
+            </if>
+            <if test="updateTime != null">
+                update_time = #{updateTime},
+            </if>
+        </set>
+        where
+        id = #{id}
+    </update>
+    <delete id="deleteMessageByDialogIds">
+        delete
+        from message
+        where dialog_id
+        in
+        <foreach collection="dialogIds" item="dialogId" separator="," open="(" close=")">
+            #{dialogId}
+        </foreach>
+    </delete>
+    <select id="selectByDialogId" resultType="com.kxdkcf.enity.Message">
+        select id, dialog_id, type, content, create_time
+        from message
+        where dialog_id = #{dialogId}
+        order by create_time
+    </select>
+    <select id="selectByUserId" resultType="com.kxdkcf.enity.Dialog">
+        select id, user_id, title, create_time, update_time
+        from dialog
+        where user_id = #{userId}
+        order by update_time
+    </select>
+</mapper>
