@@ -24,7 +24,7 @@ kxdkcf:
     hot-threshold: 1.0
 jwt:
   user-token-key: kxdk
-  ttl: 13
+  ttl: 24
   token-name: token
 
 
