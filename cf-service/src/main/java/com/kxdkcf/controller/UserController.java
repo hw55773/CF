@@ -38,7 +38,7 @@ public class UserController {
      * @param userId 用户id
      * @return 用户信息
      */
-    @Operation(summary = "根据用户id获取用户信息")
+    @Operation(summary = "根据用户id获取用户的信息")
     @GetMapping("/{id}")
     public Result queryUser(@PathVariable("id") Long userId) {
         return userService.getById(userId);
