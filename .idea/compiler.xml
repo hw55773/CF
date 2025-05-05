@@ -16,7 +16,6 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$PROJECT_DIR$/../../../../../../maven/repository/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
-          <entry name="$PROJECT_DIR$/../../../../../../maven/repository/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar" />
         </processorPath>
         <module name="cf-service" />
       </profile>

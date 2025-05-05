@@ -27,5 +27,9 @@ jwt:
   ttl: 12
   token-name: token
 
+ai:
+  key: Bearer ZRXKdLVdERccUkitfrHv:NKejIFvBbbdPxPhcmNlP
+  url: https://spark-api-open.xf-yun.com/v1/chat/completions
+
 
 
