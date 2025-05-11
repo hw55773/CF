@@ -26,10 +26,13 @@ import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -130,74 +133,105 @@ public class AiService implements IAiService {
     }
 
     @Async("taskExecutor")
-    public void healthRecommend(String string, String content, Long userId) {
+public void healthRecommend(String string, String content, Long userId) {
+    // 提取固定部分为常量
+    final int TOP_K = 6;
+    final double TEMPERATURE = 0.7;
+    final int MAX_TOKENS = 8192;
 
-        RespondsDTO respondsDTO = null;
-        ResponseFormat responseFormat = new ResponseFormat();
-        responseFormat.setType("json_object");
-        List<com.kxdkcf.ai.requset.Message> messages = new ArrayList<>();
-        com.kxdkcf.ai.requset.Message message1 = com.kxdkcf.ai.requset.Message.builder()
-                .role(Role.system.getValue())
-                .content("你是一位健康推荐助手,目标任务,你将根据健康数据，分析健康状态,给出的水果、蔬菜、谷物等推荐")
-                .build();
-        com.kxdkcf.ai.requset.Message message2 = com.kxdkcf.ai.requset.Message.builder()
-                .role(Role.user.getValue())
-                .content("任务: 根据健康数据，分析健康状态，给出在水果、蔬菜、谷物等方面的推荐\n" +
-                        "数据: 用户基本健康数据: " + string + "\n" +
-                        "用户血液检测数据: " + content + "\n" +
-                        "输出格式(json格式): {" +
-                        "fruits: [" +
-                        "{name: [水果名]" +
-                        "detail: [这种水果对人体的益处]" +
-                        "}," +
-                        "....(10种水果推荐)" +
-                        "]," +
-                        "vegetables: [" +
-                        "{name: [蔬菜名]" +
-                        "detail: [这种蔬菜对人体的益处]" +
-                        "}," +
-                        "....(10种蔬菜推荐)" +
-                        "]," +
-                        "cereals: [" +
-                        "{name: [谷物名]" +
-                        "detail: [这种谷物对人体的益处]" +
-                        "}," +
-                        "....(10种谷物推荐)" +
-                        "]" +
-                        "}")
-                .build();
-        messages.add(message1);
-        messages.add(message2);
-        List<Tool> tools = new ArrayList<>();
-        Tool tool = new Tool();
-        tool.setType("web_search");
-        WebSearch web = new WebSearch();
-        web.setEnable(true);
-        web.setSearch_mode("deep");
-        tool.setWeb_search(web);
-        tools.add(tool);
-        RequestDTO request = RequestDTO.builder()
-                .max_tokens(8192)
-                .model(Module.Ultra_4.getValue())
-                .response_format(responseFormat)
-                .messages(messages)
-                .top_k(6)
-                .tools(tools)
-                .temperature(0.7)
-                .stream(false)
-                .build();
-        try {
-            respondsDTO = HttpClientUtil
-                    .doPostAIJson(aiProperties.getUrl(), request, aiProperties.getApiKey(), RespondsDTO.class);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-        System.out.println(respondsDTO);
-        HealthRecommendation healthRecommendation = new HealthRecommendation();
-        healthRecommendation.setUserId(userId);
-        healthRecommendation.setContent(respondsDTO.getChoices().get(0).getMessage().getContent());
-        healthMapper.insertHealthRecommend(healthRecommendation);
-        stringRedisTemplate.delete("health_recommend:" + userId);
+    List<com.kxdkcf.ai.requset.Message> messages = buildMessages(string, content);
+    List<Tool> tools = buildTools();
 
+    ResponseFormat responseFormat = new ResponseFormat();
+    responseFormat.setType("json_object");
+
+    RequestDTO request = RequestDTO.builder()
+            .max_tokens(MAX_TOKENS)
+            .model(Module.Ultra_4.getValue())
+            .response_format(responseFormat)
+            .messages(messages)
+            .top_k(TOP_K)
+            .tools(tools)
+            .temperature(TEMPERATURE)
+            .stream(false)
+            .build();
+
+    RespondsDTO respondsDTO;
+    try {
+        respondsDTO = HttpClientUtil
+                .doPostAIJson(aiProperties.getUrl(), request, aiProperties.getApiKey(), RespondsDTO.class);
+    } catch (IOException e) {
+        log.error("AI请求失败，userId: {}", userId, e);
+        throw new RuntimeException("AI请求失败", e);
     }
+
+    if (respondsDTO == null || CollectionUtils.isEmpty(respondsDTO.getChoices())) {
+        log.warn("AI响应为空，userId: {}", userId);
+        return;
+    }
+
+    String resultContent = respondsDTO.getChoices().get(0).getMessage().getContent();
+    HealthRecommendation healthRecommendation = new HealthRecommendation();
+    healthRecommendation.setUserId(userId);
+    healthRecommendation.setContent(resultContent);
+
+    try {
+        healthMapper.insertHealthRecommend(healthRecommendation);
+    } catch (Exception e) {
+        log.error("插入健康推荐失败，userId: {}", userId, e);
+    }
+
+    try {
+        stringRedisTemplate.delete("health_recommend:" + userId);
+    } catch (Exception e) {
+        log.warn("删除健康推荐缓存失败，userId: {}", userId, e);
+    }
+}
+
+// 封装消息构建逻辑
+private List<com.kxdkcf.ai.requset.Message> buildMessages(String string, String content) {
+    com.kxdkcf.ai.requset.Message message1 = com.kxdkcf.ai.requset.Message.builder()
+            .role(Role.system.getValue())
+            .content("你是一位健康推荐助手,目标任务,你将根据健康数据，分析健康状态,给出的水果、蔬菜、谷物等推荐")
+            .build();
+    com.kxdkcf.ai.requset.Message message2 = com.kxdkcf.ai.requset.Message.builder()
+            .role(Role.user.getValue())
+            .content("任务: 根据健康数据，分析健康状态，给出在水果、蔬菜、谷物等方面的推荐\n" +
+                    "数据: 用户基本健康数据: " + string + "\n" +
+                    "用户血液检测数据: " + content + "\n" +
+                    "输出格式(json格式): {" +
+                    "fruits: [" +
+                    "{name: [水果名]" +
+                    "detail: [这种水果对人体的益处]" +
+                    "}," +
+                    "....(10种水果推荐)" +
+                    "]," +
+                    "vegetables: [" +
+                    "{name: [蔬菜名]" +
+                    "detail: [这种蔬菜对人体的益处]" +
+                    "}," +
+                    "....(10种蔬菜推荐)" +
+                    "]," +
+                    "cereals: [" +
+                    "{name: [谷物名]" +
+                    "detail: [这种谷物对人体的益处]" +
+                    "}," +
+                    "....(10种谷物推荐)" +
+                    "]" +
+                    "}")
+            .build();
+    return Arrays.asList(message1, message2);
+}
+
+// 封装工具构建逻辑
+private List<Tool> buildTools() {
+    Tool tool = new Tool();
+    tool.setType("web_search");
+    WebSearch web = new WebSearch();
+    web.setEnable(true);
+    web.setSearch_mode("deep");
+    tool.setWeb_search(web);
+    return Collections.singletonList(tool);
+}
+
 }
