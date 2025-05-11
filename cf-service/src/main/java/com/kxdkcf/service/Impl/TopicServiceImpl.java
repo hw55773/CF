@@ -168,32 +168,43 @@ public class TopicServiceImpl implements ITopicService {
 
     }
 
-    @Transactional(rollbackFor = Exception.class)
-    public Result postReply(ReplyDTO replyDTO) {
-        Reply reply = new Reply();
-        //属性拷贝
-        BeanUtil.copyProperties(replyDTO, reply);
-        reply.setCreateTime(LocalDateTime.now());
-        reply.setIsLiked(false);
-        reply.setLikeCount(0L);
-        reply.setUserId(ThreadLocalValueUser.getThreadLocalValue(Long.class));
-        //插入到reply表
-        replyMapper.insert(reply);
-        ReplyVO replyVO = new ReplyVO();
-        BeanUtil.copyProperties(reply, replyVO);
-        //获取当前的回复数量
-        Topic topic = topicMapper.selectTopicById(replyDTO.getTopicId());
-        Long replyCount = topic.getReplyCount();
-        topic.setReplyCount(replyCount + 1);
-        //更新回复数量
-        topic.setUpdateTime(LocalDateTime.now());
-        List<Topic> list = new ArrayList<>();
-        list.add(topic);
-        topicMapper.update(list);
-
-
-        return Result.success(replyVO);
+   @Transactional(rollbackFor = Exception.class)
+public Result postReply(ReplyDTO replyDTO) {
+    // 校验 topicId 是否存在
+    Topic topic = topicMapper.selectTopicById(replyDTO.getTopicId());
+    if (topic == null) {
+        return Result.error("话题不存在");
     }
+
+    // 获取用户ID
+    Long userId = ThreadLocalValueUser.getThreadLocalValue(Long.class);
+    if (userId == null) {
+        return Result.error("用户未登录");
+    }
+
+    // 构建回复对象
+    Reply reply = new Reply();
+    BeanUtil.copyProperties(replyDTO, reply);
+    reply.setUserId(userId);
+    reply.setCreateTime(LocalDateTime.now());
+    reply.setIsLiked(false);
+    reply.setLikeCount(0L);
+
+    // 插入回复
+    replyMapper.insert(reply);
+
+    // 确保 reply 已插入并获取主键
+    ReplyVO replyVO = new ReplyVO();
+    BeanUtil.copyProperties(reply, replyVO);
+
+    // 更新话题回复数
+    topic.setReplyCount(topic.getReplyCount() + 1);
+       List<Topic> list = new ArrayList<>();
+       topicMapper.update(list);
+
+    return Result.success(replyVO);
+}
+
 
     @Transactional(rollbackFor = Exception.class)
     public ResponseEntity<?> updateReply(Long replyId) {
