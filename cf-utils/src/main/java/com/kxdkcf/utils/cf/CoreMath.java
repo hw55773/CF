@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 
 public class CoreMath {
     private static final int MIN_COMMON_ITEMS = 2; // 最小共同评价物品数
-
     public static Map<Long, Double> computeNeighbor(Long key, Map<Long, List<RelateDTO>> map, int type) {
         Map<Long, Double> distMap = new HashMap<>();
         List<RelateDTO> userItems = map.getOrDefault(key, Collections.emptyList());

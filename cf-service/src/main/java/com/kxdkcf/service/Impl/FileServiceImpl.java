@@ -51,12 +51,11 @@ public class FileServiceImpl implements IFileService {
             log.warn("HealthDataDTO is null for user: {}", userId);
             return;
         }
-
         RespondsDTO respondsDTO = null;
         StringBuilder content = new StringBuilder();
         String string = healthDataDTO.toString();
         List<MultipartFile> files = healthDataDTO.getFiles();
-
+        //OCR识别
         if (files != null && !files.isEmpty()) {
             files.forEach(file -> {
                 if (file.isEmpty()) {
@@ -73,15 +72,12 @@ public class FileServiceImpl implements IFileService {
                 }
             });
         }
-
+        log.info(content.toString());
         // 构建消息体
         List<Message> messages = new ArrayList<>();
-        messages.add(Message.builder()
-                .role(Role.system.getValue())
-                .content("你是一位健康助手,目标任务,你将根据健康数据，给出健康状态分析,并按照:饮食建议、运动健身建议、生活作息建议;这三部分输出内容")
-                .build());
-        messages.add(Message.builder()
-                .role(Role.user.getValue())
+        messages.add(Message.builder().role(Role.system.getValue())
+                .content("你是一位健康助手,目标任务,你将根据健康数据，给出健康状态分析,并按照:饮食建议、运动健身建议、生活作息建议;这三部分输出内容").build());
+        messages.add(Message.builder().role(Role.user.getValue())
                 .content("任务: 分析以下数据，给出该用户的健康状态与建议" + "\n" +
                         " 用户健康基础数据:\n" + string +
                         "用户血液检测数据:\n" + content +
@@ -89,64 +85,43 @@ public class FileServiceImpl implements IFileService {
                         "dietaryAdvice: [饮食建议]\n" +
                         "exerciseAndFitnessAdvice: [运动健身建议]\n" +
                         "adviceOnDailyRoutine: [生活作息建议]\n" +
-                        "请以 JSON 格式输出，不要包含用户姓名")
-                .build());
-
+                        "请以 JSON 格式输出，不要包含用户姓名").build());
         ResponseFormat responseFormat = new ResponseFormat();
         responseFormat.setType("json_object");
-
         WebSearch web = new WebSearch();
         web.setEnable(true);
         web.setSearch_mode("deep");
-
         Tool tool = new Tool();
         tool.setType("web_search");
         tool.setWeb_search(web);
-
         List<Tool> tools = new ArrayList<>();
         tools.add(tool);
-
-        RequestDTO request = RequestDTO.builder()
-                .max_tokens(4096)
-                .model(Module.Ultra_4.getValue())
-                .response_format(responseFormat)
-                .messages(messages)
-                .top_k(5)
-                .tools(tools)
-                .temperature(0.5)
-                .stream(false)
-                .build();
-
+        RequestDTO request = RequestDTO.builder().max_tokens(4096).model(Module.Ultra_4.getValue()).response_format(responseFormat).messages(messages).top_k(5).tools(tools).temperature(0.5).stream(false).build();
         aiService.healthRecommend(string, content.toString(), userId);
-
         try {
             log.info("Sending AI request for user: {}", userId);
             respondsDTO = HttpClientUtil
                     .doPostAIJson(aiProperties.getUrl(), request, aiProperties.getApiKey(), RespondsDTO.class);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             log.error("AI request failed for user {}: {}", userId, e.getMessage(), e);
             return;
         }
-
         if (respondsDTO == null || CollectionUtils.isEmpty(respondsDTO.getChoices())) {
             log.warn("Invalid AI response for user: {}", userId);
             return;
         }
-
         String aiContent = respondsDTO.getChoices().get(0).getMessage().getContent();
         if (aiContent == null || aiContent.trim().isEmpty()) {
             log.warn("Empty AI content returned for user: {}", userId);
             return;
         }
-
         log.info("Received AI response: {}", aiContent);
-
         HealthData healthData = new HealthData();
         healthData.setCreateTime(LocalDateTime.now());
         healthData.setUpdateTime(LocalDateTime.now());
         healthData.setUserId(userId);
         healthData.setContent(aiContent);
-
         healthMapper.insertHealthData(healthData);
         stringRedisTemplate.delete("health_analyse:" + userId);
     }

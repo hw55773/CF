@@ -68,4 +68,6 @@ public interface TopicMapper {
 
     @Select("select id, title, content, favorites_number, create_time, update_time, user_id, like_count, reply_count, is_hot from topics")
     List<Topic> selectAllTopic();
+    @Update("update topics set reply_count=reply_count+1 where id=#{id}")
+    void updateReplyCount(Long id);
 }

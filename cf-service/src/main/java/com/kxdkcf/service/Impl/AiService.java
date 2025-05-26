@@ -173,6 +173,7 @@ public class AiService implements IAiService {
         HealthRecommendation healthRecommendation = new HealthRecommendation();
         healthRecommendation.setUserId(userId);
         healthRecommendation.setContent(resultContent);
+        log.info(resultContent);
 
         try {
             healthMapper.insertHealthRecommend(healthRecommendation);

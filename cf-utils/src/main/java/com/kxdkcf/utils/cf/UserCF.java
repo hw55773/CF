@@ -12,16 +12,13 @@ public class UserCF {
         if (userId == null || userItemRatingsMap == null || k == null || k <= 0) {
             return Collections.emptyList();
         }
-
         // 获取目标用户数据
         List<RelateDTO> userRatings = userItemRatingsMap.getOrDefault(userId, Collections.emptyList());
         Set<Long> ratedItems = userRatings.stream()
                 .map(RelateDTO::getTopicId)
                 .collect(Collectors.toSet());
-
         // 计算物品流行度
         Map<Long, Integer> itemPopularity = computeItemPopularity(userItemRatingsMap);
-
         // 计算相似用户
         Map<Long, Double> similarityMap = CoreMath.computeNeighbor(userId, userItemRatingsMap, 0);
         List<Map.Entry<Long, Double>> sortedSimilarity = similarityMap.entrySet().stream()
@@ -29,7 +26,6 @@ public class UserCF {
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .limit(k)
                 .toList();
-
         // 计算物品加权得分
         Map<Long, Double> itemScoreMap = new HashMap<>();
         sortedSimilarity.forEach(entry -> {
@@ -44,18 +40,15 @@ public class UserCF {
                         }
                     });
         });
-
         // 生成推荐列表（带冷启动处理）
         List<Long> recommendations = itemScoreMap.entrySet().stream()
                 .sorted(Map.Entry.<Long, Double>comparingByValue().reversed())
                 .map(Map.Entry::getKey)
                 .collect(Collectors.toList());
-
         // 冷启动处理：当无推荐结果时返回热门物品
         if (recommendations.isEmpty()) {
             return getPopularItems(itemPopularity, 10);
         }
-
         return recommendations;
     }
 

@@ -308,7 +308,6 @@ public class HttpClientUtil {
                     // 释放资源
                     EntityUtils.consume(response.getEntity());
                 }
-
                 if (stringBuilder.length() > 0) {
                     aiService.addMessage(stringBuilder.toString(), dialogId, (byte) 0);
                 }

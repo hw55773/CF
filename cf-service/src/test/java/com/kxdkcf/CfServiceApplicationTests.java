@@ -87,9 +87,6 @@ public class CfServiceApplicationTests {
     JavaMailSender javaMailSender;
 
     @Autowired
-    StringRedisTemplate stringRedisTemplate;
-
-    @Autowired
     ObjectMapper objectMapper;
 
     @Test
@@ -296,7 +293,8 @@ public class CfServiceApplicationTests {
         // healthService.getHealthAnalyse(26L);
         healthService.getHealthRecommendations(26L);
     }
-
+    @Autowired
+    StringRedisTemplate stringRedisTemplate;
     @Test
     void spark() throws JsonProcessingException {
 
@@ -304,7 +302,6 @@ public class CfServiceApplicationTests {
         list.add(1L);
         list.add(2L);
         list.add(3L);
-
         stringRedisTemplate.opsForValue().set("wenhao", objectMapper.writeValueAsString(list));
         String wenhao = stringRedisTemplate.opsForValue().get("wenhao");
         List<Long> list1 = objectMapper.readValue(wenhao, new TypeReference<>() {

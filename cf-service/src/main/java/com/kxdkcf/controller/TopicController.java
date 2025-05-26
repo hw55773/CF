@@ -46,8 +46,11 @@ public class TopicController {
      */
     @Operation(summary = "根据用户id获取推荐主题")
     @GetMapping("/recommend")
-    public Result queryTopic(PageTopicDTO pageTopicDTO) {
+    public Result queryTopic(@RequestParam(required = false) PageTopicDTO pageTopicDTO) {
 
+        if (pageTopicDTO == null) {
+            pageTopicDTO = new PageTopicDTO();
+        }
         pageTopicDTO.setUserId(ThreadLocalValueUser.getThreadLocalValue(Long.class));
         return userRecommendServiceImpl.queryTopic(pageTopicDTO);
     }
